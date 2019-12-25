@@ -1,0 +1,28 @@
+{
+  "name": "ultimate-jekyll-poster",
+  "version": "0.0.0",
+  "description": "Post authoring backend for Ultimate Jekyll ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/itw-creative-works/ultimate-jekyll-poster.git"
+  },
+  "keywords": [
+    "jekyll",
+    "post",
+    "blog"
+  ],
+  "author": "ITW Creative Works",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/itw-creative-works/ultimate-jekyll-poster/issues"
+  },
+  "homepage": "https://github.com/itw-creative-works/ultimate-jekyll-poster#readme",
+  "dependencies": {
+    "fs-jetpack": "^2.2.3",
+    "request": "^2.88.0"
+  }
+}
