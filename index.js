@@ -57,8 +57,8 @@ Post.prototype.create = function (body) {
 
     // Images
     for (var i = 0; i < images.length; i++) {
-      let alt = ((images[i].match(/\[(.*?)\]/img)|| [])[0]+'').replace(/(\[|\])/img, '');
-      let title = ((images[i].match(/\((.*?)\)/img)|| [])[0]+'').replace(/(\(|\))/img, '');
+      let alt = ((images[i].match(/\[(.*?)\]/img) || [])[0]+'').replace(/(\[|\])/img, '');
+      let title = ((images[i].match(/\((.*?)\)/img) || [])[0]+'').replace(/(\(|\))/img, '');
       let link = title.replace(/\s.*?"(.*?)"\s*/g,'');
       let different = (title != link);
       // let newLink = (alt.replace(/\s/g, '-') + '.jpg').toLowerCase();
@@ -81,6 +81,9 @@ Post.prototype.create = function (body) {
           content = content.replace(`![${alt}](${lookForLink})`, `![${alt}](${tempPrePath + newLink + result.extension})`)
         }
       })
+      .catch(function (e) {
+        reject(e);
+      })
     }
 
     // Download main image
@@ -88,6 +91,9 @@ Post.prototype.create = function (body) {
     await This.download(body.headerImageURL, imageSavePath, body.url)
     .then(function (result) {
       // console.log(`Saved header image to: ${headerPath}.${result.extension}`);
+    })
+    .catch(function (e) {
+      reject(e);
     })
 
     // console.log('imagesMatrix', imagesMatrix);
@@ -125,33 +131,41 @@ Post.prototype.download = function (uri, filepath, filename, callback) {
   };
 
   return new Promise(function(resolve, reject) {
-    var req = request(options)
-    req.on('response', function (res) {
-        let type = res.headers['content-type'];
-        let ext = '';
-        if (type == 'image/jpeg' || type == 'image/jpg') {
-          ext = 'jpg';
-        } else if ('image/png') {
-          ext = 'png';
-        }
-        meta.extensions = ext;
-        meta.finalPath = `${filepath}${filename}.${ext}`;
-        meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
-        fs.dir(pathApi.dirname(meta.tempPath));
-        req.pipe(fsApi.createWriteStream(meta.tempPath, {encoding: 'binary'}))
-        req.on('end', async function () {
-          // all done
-          This.imageMap.push({
-            finalPath: meta.finalPath,
-            tempPath: meta.tempPath,
-          });
-          await This.onDownload(meta);
+    try {
+      var req = request(options)
+      req.on('response', function (res) {
+          let type = res.headers['content-type'];
+          let ext = '';
+          // console.log('type', type, uri);
+          if (type.includes('image/jpeg') || type.includes('image/jpg')) {
+            ext = 'jpg';
+          } else if (type.includes('image/png')) {
+            ext = 'png';
+          } else {
+            reject(`Incorrect image type: ${type}`)
+          }
 
-          // console.log('---download DONE, saved to tempPath', meta.tempPath);
-          resolve(meta);
-        })
+          meta.extensions = ext;
+          meta.finalPath = `${filepath}${filename}.${ext}`;
+          meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
+          fs.dir(pathApi.dirname(meta.tempPath));
+          req.pipe(fsApi.createWriteStream(meta.tempPath, {encoding: 'binary'}))
+          req.on('end', async function () {
+            // all done
+            This.imageMap.push({
+              finalPath: meta.finalPath,
+              tempPath: meta.tempPath,
+            });
+            await This.onDownload(meta);
 
-    })
+            // console.log('---download DONE, saved to tempPath', meta.tempPath);
+            resolve(meta);
+          })
+
+      })
+    } catch (e) {
+      reject(e);
+    }
   });
 };
 
@@ -175,6 +189,7 @@ Post.prototype.saveImage = function (path, options) {
       // console.log('testing against...', element.finalPath);
       return element.finalPath == path;
     });
+    fs.dir(pathApi.dirname(imageObj.finalPath));
     fs.move(imageObj.tempPath, imageObj.finalPath);
 
     resolve();
