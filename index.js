@@ -72,11 +72,12 @@ Post.prototype.create = function (body) {
       let curSavePath = `${imageSavePath}${newLink}`;
       await This.download(link, imageSavePath, newLink,)
       .then(function (result) {
+        // console.log('-----result', result);
         // console.log(`Saved image to: ${curSavePath}.${result.extension}`);
         let tempPrePath = (body.includeLocalImagePath ? imageSavePathReg : '');
         let lookForLink = different ? title : link;
         if (body.enableReplaceImagesMarkdown) {
-          content = content.replace(`![${alt}](${lookForLink})`, body.replaceImagesIncludeTag.replace('{{url}}', tempPrePath + newLink + result.extension).replace('{{alt}}', alt))
+          content = content.replace(`![${alt}](${lookForLink})`, body.replaceImagesIncludeTag.replace('{{url}}', tempPrePath + newLink + '.' + result.extension).replace('{{alt}}', alt))
         } else {
           content = content.replace(`![${alt}](${lookForLink})`, `![${alt}](${tempPrePath + newLink + result.extension})`)
         }
@@ -137,15 +138,19 @@ Post.prototype.download = function (uri, filepath, filename, callback) {
           let type = res.headers['content-type'];
           let ext = '';
           // console.log('type', type, uri);
+          // console.log('--------1', 'content-type', type);
           if (type.includes('image/jpeg') || type.includes('image/jpg')) {
             ext = 'jpg';
+            // console.log('--------1 1');
           } else if (type.includes('image/png')) {
             ext = 'png';
+            // console.log('--------1 2');
           } else {
-            reject(`Incorrect image type: ${type}`)
+            // console.log('--------1 3');
+            return reject(`Incorrect image type: ${type}`)
           }
 
-          meta.extensions = ext;
+          meta.extension = ext;
           meta.finalPath = `${filepath}${filename}.${ext}`;
           meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
           fs.dir(pathApi.dirname(meta.tempPath));
@@ -159,12 +164,12 @@ Post.prototype.download = function (uri, filepath, filename, callback) {
             await This.onDownload(meta);
 
             // console.log('---download DONE, saved to tempPath', meta.tempPath);
-            resolve(meta);
+            return resolve(meta);
           })
 
       })
     } catch (e) {
-      reject(e);
+      return reject(e);
     }
   });
 };
