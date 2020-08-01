@@ -1,9 +1,10 @@
-const request     = require('request');
-const fs = require("fs-jetpack");
-let pathApi;
-let os;
+const request = require('request');
+const fetch = require('node-fetch');
+const fs = require('fs');
+const jetpack = require('fs-jetpack');
+const pathApi = require('path');
+const os = require('os');
 
-let fsApi;
 let template =
 `
 ---
@@ -107,7 +108,7 @@ Post.prototype.create = function (body) {
     // Save post
     let postPath = `${body.path}/${body.date}-${body.url}.md`.replace(/\/\//g, '/');
     // console.log('Saving post to....', postPath);
-    // fs.write(postPath, content)
+    // jetpack.write(postPath, content)
 
     resolve({
       path: postPath,
@@ -119,10 +120,6 @@ Post.prototype.create = function (body) {
 
 Post.prototype.download = function (uri, filepath, filename, callback) {
   let This = this;
-  var request = require('request')
-  // var fs = require('fs')
-  pathApi = pathApi || require('path');
-  fsApi = fsApi || require('fs');
   let meta = {};
 
   options = {
@@ -133,50 +130,99 @@ Post.prototype.download = function (uri, filepath, filename, callback) {
 
   return new Promise(function(resolve, reject) {
     try {
-      var req = request(options)
-      req.on('response', function (res) {
-          let type = res.headers['content-type'];
-          let ext = '';
-          // console.log('type', type, uri);
-          // console.log('--------1', 'content-type', type);
-          if (type.includes('image/jpeg') || type.includes('image/jpg')) {
-            ext = 'jpg';
-            // console.log('--------1 1');
-          } else if (type.includes('image/png')) {
-            ext = 'png';
-            // console.log('--------1 2');
-          } else {
-            // console.log('--------1 3');
-            return reject(`Incorrect image type: ${type}`)
-          }
-
-          meta.extension = ext;
-          meta.finalPath = `${filepath}${filename}.${ext}`;
-          meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
-          fs.dir(pathApi.dirname(meta.tempPath));
-          req.pipe(fsApi.createWriteStream(meta.tempPath, {encoding: 'binary'}))
-          req.on('end', async function () {
-            // all done
-            This.imageMap.push({
-              finalPath: meta.finalPath,
-              tempPath: meta.tempPath,
-            });
-            await This.onDownload(meta);
-
-            // console.log('---download DONE, saved to tempPath', meta.tempPath);
-            return resolve(meta);
-          })
-
+      fetch(uri, {
+        method: 'get',
+        // encoding: 'binary',
       })
+      .then(async (res) => {
+        // console.log('res', res);
+        let type = res.headers.get('content-type');
+        let ext = '';
+        if (type.includes('image/jpeg') || type.includes('image/jpg')) {
+          ext = 'jpg';
+        } else if (type.includes('image/png')) {
+          ext = 'png';
+        } else {
+          return reject(`Incorrect image type: ${type}`)
+        }
+
+        meta.extension = ext;
+        meta.finalPath = `${filepath}${filename}.${ext}`;
+        meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
+        jetpack.dir(pathApi.dirname(meta.tempPath));
+        res.body.pipe(fs.createWriteStream(meta.tempPath, {encoding: 'binary'}));
+
+        // all done
+        This.imageMap.push({
+          finalPath: meta.finalPath,
+          tempPath: meta.tempPath,
+        });
+
+        await This.onDownload(meta);
+
+        return resolve(meta);
+      })
+
     } catch (e) {
       return reject(e);
     }
   });
 };
 
+// Post.prototype.download = function (uri, filepath, filename, callback) {
+//   let This = this;
+//   let meta = {};
+//
+//   options = {
+//      method: 'GET'
+//     , uri: uri
+//     , encoding: 'binary'
+//   };
+//
+//   return new Promise(function(resolve, reject) {
+//     try {
+//       var req = request(options)
+//       req.on('response', function (res) {
+//           let type = res.headers['content-type'];
+//           let ext = '';
+//           // console.log('type', type, uri);
+//           // console.log('--------1', 'content-type', type);
+//           if (type.includes('image/jpeg') || type.includes('image/jpg')) {
+//             ext = 'jpg';
+//             // console.log('--------1 1');
+//           } else if (type.includes('image/png')) {
+//             ext = 'png';
+//             // console.log('--------1 2');
+//           } else {
+//             // console.log('--------1 3');
+//             return reject(`Incorrect image type: ${type}`)
+//           }
+//
+//           meta.extension = ext;
+//           meta.finalPath = `${filepath}${filename}.${ext}`;
+//           meta.tempPath = getTempPath(`${filepath}${filename}.${ext}`);
+//           jetpack.dir(pathApi.dirname(meta.tempPath));
+//           req.pipe(fs.createWriteStream(meta.tempPath, {encoding: 'binary'}))
+//           req.on('end', async function () {
+//             // all done
+//             This.imageMap.push({
+//               finalPath: meta.finalPath,
+//               tempPath: meta.tempPath,
+//             });
+//             await This.onDownload(meta);
+//
+//             // console.log('---download DONE, saved to tempPath', meta.tempPath);
+//             return resolve(meta);
+//           })
+//
+//       })
+//     } catch (e) {
+//       return reject(e);
+//     }
+//   });
+// };
+
 function getTempPath(path) {
-  pathApi = pathApi || require('path');
-  os = os || require('os');
   let tempPrefix = os.tmpdir();
   return path.indexOf(tempPrefix) == -1 ? pathApi.join(tempPrefix, path) : path;
 }
@@ -185,8 +231,6 @@ Post.prototype.saveImage = function (path, options) {
   let This = this;
   // console.log('Post.saveImage...');
   return new Promise(function(resolve, reject) {
-    fsApi = fsApi || require('fs');
-    pathApi = pathApi || require('path');
 
     // console.log('This.imageMap', This.imageMap);
     // console.log('looking for...', path);
@@ -194,8 +238,8 @@ Post.prototype.saveImage = function (path, options) {
       // console.log('testing against...', element.finalPath);
       return element.finalPath == path;
     });
-    fs.dir(pathApi.dirname(imageObj.finalPath));
-    fs.move(imageObj.tempPath, imageObj.finalPath);
+    jetpack.dir(pathApi.dirname(imageObj.finalPath));
+    jetpack.move(imageObj.tempPath, imageObj.finalPath, {overwrite: true});
 
     resolve();
   });
@@ -203,40 +247,31 @@ Post.prototype.saveImage = function (path, options) {
 
 
 Post.prototype.createWriteStream = function (filepath, options) {
-  const path = require('path');
-
   options = options || {};
   options.temp = typeof options.temp !== 'undefined' ? options.temp : false;
   if (options.temp === true) {
-    const os = require('os');
-    filepath = path.join(os.tmpdir(), filepath);
+    filepath = pathApi.join(os.tmpdir(), filepath);
   }
 
   // console.log('Post.createWriteStream', filepath);
-  fs.dir(path.dirname(filepath));
-  return fs.createWriteStream(filepath);
+  jetpack.dir(pathApi.dirname(filepath));
+  return jetpack.createWriteStream(filepath);
 };
 
 Post.prototype.read = function (filepath, options) {
-  const path = require('path');
-
   options = options || {};
   options.temp = typeof options.temp !== 'undefined' ? options.temp : false;
   if (options.temp === true) {
-    const os = require('os');
-    filepath = path.join(os.tmpdir(), filepath);
+    filepath = pathApi.join(os.tmpdir(), filepath);
   }
-  // console.log('Post.read', filepath, 'length = ', fs.read(filepath).length);
-  return fs.read(filepath);
+  // console.log('Post.read', filepath, 'length = ', jetpack.read(filepath).length);
+  return jetpack.read(filepath);
 };
 
 Post.prototype.readImage = function (filepath) {
-  const path = require('path');
-  fsApi = fsApi || require('fs');
-
   return new Promise(function(resolve, reject) {
 
-    fsApi.readFile(filepath, 'binary', (err, data)=>{
+    fs.readFile(filepath, 'binary', (err, data)=>{
       if (err) {
           console.log(err)
           throw err
@@ -255,18 +290,15 @@ Post.prototype.readImage = function (filepath) {
 
 
 Post.prototype.write = function (filepath, content, options) {
-  const path = require('path');
-
   options = options || {};
   options.temp = typeof options.temp !== 'undefined' ? options.temp : false;
   if (options.temp === true) {
-    const os = require('os');
-    filepath = path.join(os.tmpdir(), filepath);
+    filepath = pathApi.join(os.tmpdir(), filepath);
   }
 
   // console.log('Post.write', filepath);
-  fs.dir(path.dirname(filepath));
-  return fs.write(filepath, content);
+  jetpack.dir(pathApi.dirname(filepath));
+  return jetpack.write(filepath, content);
 };
 
 Post.prototype.removeDirDot = function (filepath) {

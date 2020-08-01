@@ -318,7 +318,8 @@ Post.prototype.saveImage = function (path, options) {
       console.log('testing against...', element.finalPath);
       return element.finalPath == path;
     });
-    fs.move(imageObj.tempPath, imageObj.finalPath);
+
+    fs.move(imageObj.tempPath, imageObj.finalPath, {overwrite: true});
     // options = options || {};
     // options.temp = typeof options.temp !== 'undefined' ? options.temp : false;
     // if (options.temp === true) {
