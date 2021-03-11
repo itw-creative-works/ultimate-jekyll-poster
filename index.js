@@ -24,7 +24,7 @@ post:
 {{body}}
 `
 
-let imgTemplate = `{%- include /master/helpers/image.html src="{url}" alt="{alt}" -%}`;
+let imgTemplate = `{%- include /master/helpers/blog-image.html name="{name}" alt="{alt}" -%}`;
 
 
 function Post(init) {
@@ -78,7 +78,8 @@ Post.prototype.create = function (body) {
         let tempPrePath = (body.includeLocalImagePath ? imageSavePathReg : '');
         let lookForLink = different ? title : link;
         if (body.enableReplaceImagesMarkdown) {
-          content = content.replace(`![${alt}](${lookForLink})`, body.replaceImagesIncludeTag.replace('{url}', tempPrePath + newLink + '.' + result.extension).replace('{alt}', alt))
+          let imageFullPath = tempPrePath + newLink + '.' + result.extension;
+          content = content.replace(`![${alt}](${lookForLink})`, body.replaceImagesIncludeTag.replace('{url}', imageFullPath).replace('{name}', imageFullPath.split('/').pop()).replace('{alt}', alt))
         } else {
           content = content.replace(`![${alt}](${lookForLink})`, `![${alt}](${tempPrePath + newLink + result.extension})`)
         }
