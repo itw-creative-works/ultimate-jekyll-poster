@@ -13,8 +13,8 @@ layout: {{layout}}
 
 ### POST ONLY ###
 post:
-  title: {{title}}
-  excerpt: {{excerpt}}
+  title: "{{title}}"
+  excerpt: "{{excerpt}}"
   author: {{author}}
   id: {{id}}
   tags: {{tags}}
