@@ -23,6 +23,6 @@
   "homepage": "https://github.com/itw-creative-works/ultimate-jekyll-poster#readme",
   "dependencies": {
     "fs-jetpack": "^3.1.0",
-    "node-fetch": "^2.6.1"
+    "node-fetch": "^3.1.1"
   }
 }
