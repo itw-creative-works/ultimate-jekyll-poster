@@ -1,4 +1,4 @@
-const request = require('request');
+// const request = require('request');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const jetpack = require('fs-jetpack');
@@ -41,17 +41,18 @@ Post.prototype.create = function (body) {
   let This = this;
   return new Promise(async function(resolve, reject) {
     // body = querystring.parse(body);
-    let keys = Object.keys(body);
+    // console.log('-----body 2', body);
+    let keys = Object.keys(body.payload);
     let images = [];
     let imagesMatrix = [];
     let links = [];
     let linksMatrix = [];
     let content = template;
-    let imageSavePath = `./assets/_src/images/blog/posts/post-${body.id}/`;
-    let imageSavePathReg = `/assets/images/blog/posts/post-${body.id}/`;
-    body.replaceImagesIncludeTag = body.replaceImagesIncludeTag || imgTemplate;
+    let imageSavePath = `./assets/_src/images/blog/posts/post-${body.payload.id}/`;
+    let imageSavePathReg = `/assets/images/blog/posts/post-${body.payload.id}/`;
+    body.payload.replaceImagesIncludeTag = body.payload.replaceImagesIncludeTag || imgTemplate;
     for (var i = 0; i < keys.length; i++) {
-      content = content.replace(`{{${[keys[i]]}}}`, body[keys[i]]);
+      content = content.replace(`{{${[keys[i]]}}}`, body.payload[keys[i]]);
     }
     images = content.match(/(?:!\[(.*?)\]\((.*?)\))/img) || [];
     links = content.match(/(?:\[(.*?)\]\((.*?)\))/img) || [];
@@ -75,11 +76,11 @@ Post.prototype.create = function (body) {
       .then(function (result) {
         // console.log('-----result', result);
         // console.log(`Saved image to: ${curSavePath}.${result.extension}`);
-        let tempPrePath = (body.includeLocalImagePath ? imageSavePathReg : '');
+        let tempPrePath = (body.payload.includeLocalImagePath ? imageSavePathReg : '');
         let lookForLink = different ? title : link;
-        if (body.enableReplaceImagesMarkdown) {
+        if (body.payload.enableReplaceImagesMarkdown) {
           let imageFullPath = tempPrePath + newLink + '.' + result.extension;
-          content = content.replace(`![${alt}](${lookForLink})`, body.replaceImagesIncludeTag.replace('{url}', imageFullPath).replace('{name}', imageFullPath.split('/').pop()).replace('{alt}', alt))
+          content = content.replace(`![${alt}](${lookForLink})`, body.payload.replaceImagesIncludeTag.replace('{url}', imageFullPath).replace('{name}', imageFullPath.split('/').pop()).replace('{alt}', alt))
         } else {
           content = content.replace(`![${alt}](${lookForLink})`, `![${alt}](${tempPrePath + newLink + result.extension})`)
         }
@@ -90,8 +91,8 @@ Post.prototype.create = function (body) {
     }
 
     // Download main image
-    let headerPath = `${imageSavePath}${body.url}`;
-    await This.download(body.headerImageURL, imageSavePath, body.url)
+    let headerPath = `${imageSavePath}${body.payload.url}`;
+    await This.download(body.payload.headerImageURL, imageSavePath, body.payload.url)
     .then(function (result) {
       // console.log(`Saved header image to: ${headerPath}.${result.extension}`);
     })
@@ -107,13 +108,46 @@ Post.prototype.create = function (body) {
     content = `${content.trim()}\n`;
 
     // Save post
-    let postPath = `${body.path}/${body.date}-${body.url}.md`.replace(/\/\//g, '/');
+    let postPath = `${body.payload.path}/${body.payload.date}-${body.payload.url}.md`.replace(/\/\//g, '/');
     // console.log('Saving post to....', postPath);
     // jetpack.write(postPath, content)
+
+    // Post handler
+    //    dom.select('#replaceImagesIncludeTag').setValue(fields.replaceImagesIncludeTag || '');
+
+    let postHandlerResponse = await fetch(body.payload.postHandlerEndpoint, {
+    // let postHandlerResponse = await fetch('http://localhost:5001/ultimate-jekyll/us-central1/bm_api', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        authenticationToken: body.authenticationToken,
+        command: 'handler:create-post',
+        payload: body.payload,
+      }),
+    })
+    .then(function (res) {
+      return res.text()
+      .then(function (data) {
+        if (res.ok) {
+          return JSON.parse(data)
+        } else {
+          throw new Error(data || res.statusText || 'Unknown error.')
+        }
+      })
+    })
+    .catch(function (e) {
+      return e;
+    });
+
+    const postHandlerError = postHandlerResponse instanceof Error;
 
     resolve({
       path: postPath,
       content: content,
+      postHandler: {
+        success: !postHandlerError,
+        data: postHandlerError ? `${postHandlerResponse}` : postHandlerResponse,
+      },
     });
   });
 };
