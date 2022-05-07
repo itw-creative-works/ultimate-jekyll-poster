@@ -41,7 +41,7 @@ Post.prototype.create = function (body) {
   let This = this;
   return new Promise(async function(resolve, reject) {
     // body = querystring.parse(body);
-    // console.log('-----body 2', body);
+    // console.log('-----222 body', body);
     let keys = Object.keys(body.payload);
     let images = [];
     let imagesMatrix = [];
@@ -114,12 +114,14 @@ Post.prototype.create = function (body) {
 
     // Post handler
     //    dom.select('#replaceImagesIncludeTag').setValue(fields.replaceImagesIncludeTag || '');
+    // console.log('-----333 body', body);
 
     let postHandlerResponse = await fetch(body.payload.postHandlerEndpoint, {
     // let postHandlerResponse = await fetch('http://localhost:5001/ultimate-jekyll/us-central1/bm_api', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        backendManagerKey: body.backendManagerKey,
         authenticationToken: body.authenticationToken,
         command: 'handler:create-post',
         payload: body.payload,
