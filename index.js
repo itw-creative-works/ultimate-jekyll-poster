@@ -195,9 +195,14 @@ Post.prototype.download = function (uri, filepath, filename, callback) {
           tempPath: meta.tempPath,
         });
 
-        await This.onDownload(meta);
+        await This.onDownload(meta)
+        .then(() => {
+          return resolve(meta);
+        })
+        .catch(e => {
+          return reject(e);
+        })
 
-        return resolve(meta);
       })
 
     } catch (e) {
@@ -269,16 +274,20 @@ Post.prototype.saveImage = function (path, options) {
   // console.log('Post.saveImage...');
   return new Promise(function(resolve, reject) {
 
-    // console.log('This.imageMap', This.imageMap);
-    // console.log('looking for...', path);
-    let imageObj = This.imageMap.find(function (element) {
-      // console.log('testing against...', element.finalPath);
-      return element.finalPath == path;
-    });
-    jetpack.dir(pathApi.dirname(imageObj.finalPath));
-    jetpack.move(imageObj.tempPath, imageObj.finalPath, {overwrite: true});
+    try {
+      // console.log('This.imageMap', This.imageMap);
+      // console.log('looking for...', path);
+      let imageObj = This.imageMap.find(function (element) {
+        // console.log('testing against...', element.finalPath);
+        return element.finalPath == path;
+      });
+      jetpack.dir(pathApi.dirname(imageObj.finalPath));
+      jetpack.move(imageObj.tempPath, imageObj.finalPath, {overwrite: true});
+      return resolve();
+    } catch (e) {
+      return reject(e);
+    }
 
-    resolve();
   });
 };
 
