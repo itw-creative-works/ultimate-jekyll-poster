@@ -1,6 +1,6 @@
 {
   "name": "ultimate-jekyll-poster",
-  "version": "0.0.12",
+  "version": "0.0.13",
   "description": "Post authoring backend for Ultimate Jekyll ",
   "main": "index.js",
   "scripts": {
