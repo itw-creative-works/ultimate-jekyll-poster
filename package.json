@@ -1,6 +1,6 @@
 {
   "name": "ultimate-jekyll-poster",
-  "version": "0.0.13",
+  "version": "0.0.14",
   "description": "Post authoring backend for Ultimate Jekyll ",
   "main": "index.js",
   "scripts": {
@@ -22,7 +22,7 @@
   },
   "homepage": "https://github.com/itw-creative-works/ultimate-jekyll-poster#readme",
   "dependencies": {
-    "fs-jetpack": "^3.1.0",
-    "wonderful-fetch": "^0.0.13"
+    "fs-jetpack": "^3.2.0",
+    "wonderful-fetch": "^0.0.14"
   }
 }
