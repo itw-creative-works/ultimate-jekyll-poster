@@ -1,10 +1,11 @@
 {
   "name": "ultimate-jekyll-poster",
-  "version": "0.0.14",
+  "version": "0.0.15",
   "description": "Post authoring backend for Ultimate Jekyll ",
-  "main": "index.js",
+  "main": "./dist/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "npm run prepare && ./node_modules/mocha/bin/mocha test/ --recursive --timeout=10000",
+    "prepare": "node -e 'require(`prepare-package`)'"
   },
   "repository": {
     "type": "git",
@@ -24,5 +25,9 @@
   "dependencies": {
     "fs-jetpack": "^3.2.0",
     "wonderful-fetch": "^0.0.14"
+  },
+  "devDependencies": {
+    "mocha": "^8.4.0",
+    "prepare-package": "^0.0.13"
   }
 }
