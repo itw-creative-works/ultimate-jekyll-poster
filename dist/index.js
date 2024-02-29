@@ -331,6 +331,8 @@ Post.prototype.write = function (filepath, content, options) {
 Post.prototype.removeDirDot = function (filepath) {
   const self = this;
 
+  filepath = filepath || '';
+
   return filepath.replace(/^\.\//, '');
 };
 
